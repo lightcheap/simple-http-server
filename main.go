@@ -3,6 +3,9 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
+	"strconv"
+	"strings"
 
 	"net"
 
@@ -46,15 +49,25 @@ func run() error {
 	fmt.Println(">>> スタート　シマス")
 
 	scanner := bufio.NewScanner(conn)
+	// ヘッダのContent-Length のバイト数を取得する
+	var contentLength int
 
 	// 一行ずつ処理
 	for scanner.Scan() {
 		// リクエストヘッダーを表示する
 		// Text()からの返り値が空文字であれば空と判断する
-		if scanner.Text() == "" {
+		line := scanner.Text()
+		if line == "" {
 			break
 		}
-		fmt.Println(scanner.Text())
+
+		if strings.HasPrefix(line, "Content-Length") {
+			contentLength, err := strconv.Atoi(strings.TrimSpace(strings.Split(line, ":")[1]))
+			if err != nil {
+				return errors.WithStack(err)
+			}
+		}
+		fmt.Println(line)
 	}
 
 	// non-EOF errorがある場合
@@ -62,8 +75,19 @@ func run() error {
 		return scanner.Err()
 	}
 
+	// リクエストボディ
+	buf := make([]byte, contentLength)
+	_, err = io.ReadFull(conn, buf)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	fmt.Println("BODY: ", string(buf))
+
+	if scanner.Err() != nil {
+		return scanner.Err()
+	}
+
 	// // make()・・・スライス作成
-	// buf := make([]byte, 1024)
 
 	// // Readメソッドの返り値が 0 byte なら全て Read したとしておく
 	// for {
