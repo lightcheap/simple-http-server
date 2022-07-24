@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 
 	"net"
@@ -20,7 +21,7 @@ func main() {
 
 func run() error {
 	// スタート表示
-	fmt.Println("start tcp listen ...")
+	fmt.Println("TCPセツゾク　ヲ　カイシ　シマス ...")
 
 	// listenポート、サーバー機能の作成
 	// localhost:12345でサーバーを立てることになる
@@ -42,24 +43,41 @@ func run() error {
 	// 関数の最後に closeする
 	defer conn.Close()
 
-	fmt.Println(">>> start")
+	fmt.Println(">>> スタート　シマス")
 
-	// make()・・・スライス作成
-	buf := make([]byte, 1024)
+	scanner := bufio.NewScanner(conn)
 
-	// Readメソッドの返り値が 0 byte なら全て Read したとしておく
-	for {
-		n, err := conn.Read(buf)
-		if n == 0 {
+	// 一行ずつ処理
+	for scanner.Scan() {
+		// リクエストヘッダーを表示する
+		// Text()からの返り値が空文字であれば空と判断する
+		if scanner.Text() == "" {
 			break
 		}
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		fmt.Println(string(buf[:n]))
+		fmt.Println(scanner.Text())
 	}
 
-	fmt.Println("<<< end")
+	// non-EOF errorがある場合
+	if scanner.Err() != nil {
+		return scanner.Err()
+	}
+
+	// // make()・・・スライス作成
+	// buf := make([]byte, 1024)
+
+	// // Readメソッドの返り値が 0 byte なら全て Read したとしておく
+	// for {
+	// 	n, err := conn.Read(buf)
+	// 	if n == 0 {
+	// 		break
+	// 	}
+	// 	if err != nil {
+	// 		return errors.WithStack(err)
+	// 	}
+	// 	fmt.Println(string(buf[:n]))
+	// }
+
+	fmt.Println("<<< セツゾク オワリマス")
 
 	return nil
 }
